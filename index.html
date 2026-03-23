@@ -521,10 +521,8 @@ function openModal(){
 
 function tryOpenModal(){
   const today=todayStr();
-  // Check if already asked today
+  // Only skip if already asked today
   if(localStorage.getItem(AK+today)) return;
-  // Check if already has entry today
-  if(appData.some(d=>d.date===today)) return;
   openModal();
 }
 
@@ -711,6 +709,11 @@ function dl(name,href){const a=document.createElement('a');a.href=href;a.downloa
 function renderAll(){renderMonthSelect();renderTable();renderWeek();}
 
 /* ═══ INIT ═══ */
+// Temizle: eski "soruldu" kayıtlarını sil (bugünden öncekiler gereksiz)
+const today0=todayStr();
+Object.keys(localStorage).forEach(k=>{ if(k.startsWith(AK) && k!==AK+today0) localStorage.removeItem(k); });
+// Bugünün kaydını da sil ki popup açılsın (ilk yüklemede)
+localStorage.removeItem(AK+today0);
 const t=new Date();
 document.getElementById('inpDate').value=t.toISOString().slice(0,10);
 ['inpDate','inpHours','inpNote'].forEach(id=>{
