@@ -13,6 +13,23 @@
   --accent3: #ff9f47; --accent4: #ff5e8a;
   --text: #f0f0f0; --muted: #666; --danger: #ff5757;
 }
+body.light {
+  --bg: #f4f4f0; --surface: #ffffff; --surface2: #eeeeea;
+  --border: #d8d8d0; --accent: #6b8f00; --accent2: #0080a0;
+  --accent3: #c06000; --accent4: #c0004a;
+  --text: #1a1a1a; --muted: #999; --danger: #cc2222;
+}
+
+/* THEME TOGGLE */
+.theme-btn {
+  position: fixed; top: 18px; right: 18px; z-index: 200;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); width: 42px; height: 42px; border-radius: 50%;
+  font-size: 20px; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; transition: border-color .2s, transform .2s;
+  box-shadow: 0 2px 12px rgba(0,0,0,.3);
+}
+.theme-btn:hover { border-color: var(--accent); transform: scale(1.1); }
 body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; min-height: 100vh; padding: 0 0 60px; }
 
 /* ═══════════════ MODAL ═══════════════ */
@@ -196,6 +213,9 @@ tbody td:last-child { text-align:right; }
 .btn-export { display:flex; align-items:center; gap:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-family:'DM Mono',monospace; font-size:13px; padding:12px 18px; border-radius:10px; cursor:pointer; transition:border-color .15s; }
 .btn-export:hover { border-color:var(--accent); color:var(--accent); }
 
+.date-drum-btn { background:var(--surface2); border:1px solid var(--border); color:var(--text); font-family:'DM Mono',monospace; font-size:14px; padding:10px 12px; border-radius:8px; cursor:pointer; width:100%; display:flex; justify-content:space-between; align-items:center; transition:border-color .15s; }
+.date-drum-btn:hover { border-color:var(--accent); }
+
 @media(max-width:520px){
   .summary-grid{grid-template-columns:1fr 1fr;}
   .add-panel{flex-direction:column;} .btn-add{width:100%;}
@@ -205,6 +225,8 @@ tbody td:last-child { text-align:right; }
 </style>
 </head>
 <body>
+
+<button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Tema değiştir">🌙</button>
 
 <!-- ═══ MODAL ═══ -->
 <div class="modal-overlay hidden" id="modalOverlay">
@@ -250,7 +272,50 @@ tbody td:last-child { text-align:right; }
   </div>
 </div>
 
+<!-- ═══ DELETE CONFIRM MODAL ═══ -->
+<div class="modal-overlay hidden" id="deleteOverlay">
+  <div class="modal" style="max-width:300px;text-align:center;">
+    <div class="modal-icon">🗑️</div>
+    <div class="modal-title">Mesai Silinsin mi?</div>
+    <div class="modal-sub">Bu kayıt kalıcı olarak silinecek.</div>
+    <div class="modal-btns">
+      <button class="btn-no" onclick="closeDeleteModal()">Vazgeç</button>
+      <button class="btn-yes" style="background:var(--danger);color:#fff;" onclick="confirmDelete()">Evet, Sil</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ APP ═══ -->
+<div class="modal-overlay hidden" id="datepickerOverlay">
+  <div class="modal" style="max-width:320px;">
+    <div class="modal-icon">📅</div>
+    <div class="modal-title">Tarih Seç</div>
+    <div class="modal-sub" id="dpPreview">—</div>
+
+    <div class="drum-outer" style="margin-bottom:20px;">
+      <div class="drum-band"></div>
+      <div class="drum-col" id="dc-day" style="flex:1.2;">
+        <div class="drum-lbl">GÜN</div>
+        <div class="drum-track" id="dt-day"></div>
+      </div>
+      <div class="drum-sep"></div>
+      <div class="drum-col" id="dc-mon" style="flex:2;">
+        <div class="drum-lbl">AY</div>
+        <div class="drum-track" id="dt-mon"></div>
+      </div>
+      <div class="drum-sep"></div>
+      <div class="drum-col" id="dc-yr" style="flex:1.5;">
+        <div class="drum-lbl">YIL</div>
+        <div class="drum-track" id="dt-yr"></div>
+      </div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn-no" onclick="closeDatePicker()">İptal</button>
+      <button class="btn-yes" onclick="confirmDatePicker()">Tamam ✓</button>
+    </div>
+  </div>
+</div>
 <div class="container">
   <header>
     <span class="label-tag">⏱ Zaman Yönetimi</span>
@@ -267,12 +332,15 @@ tbody td:last-child { text-align:right; }
 
   <!-- AYLIK -->
   <div class="tab-panel active" id="tab-aylik">
-    <div class="month-bar">
-      <div class="month-label" id="monthLabel">—</div>
-      <select id="monthSelect"></select>
-    </div>
+    <div style="margin-bottom:24px;"></div>
     <div class="add-panel">
-      <div class="field"><label>Tarih</label><input type="date" id="inpDate"/></div>
+      <div class="field"><label>Tarih</label>
+        <button class="date-drum-btn" id="dateDrumBtn" onclick="openDatePicker()">
+          <span id="dateDrumDisplay">Tarih Seç</span>
+          <span style="color:var(--accent);font-size:16px;">▾</span>
+        </button>
+        <input type="hidden" id="inpDate"/>
+      </div>
       <div class="field"><label>Mesai Saati</label><input type="number" id="inpHours" min="0.5" max="24" step="0.5" placeholder="örn: 3.5"/></div>
       <div class="field"><label>Tür</label>
         <select id="inpType">
@@ -572,30 +640,24 @@ function getMonths(){
   return [...s].sort().reverse();
 }
 function renderMonthSelect(){
-  const sel=document.getElementById('monthSelect');
   const ms=getMonths();
   if(!selMonth||!ms.includes(selMonth)) selMonth=ms[0];
-  sel.innerHTML=ms.map(m=>`<option value="${m}"${m===selMonth?' selected':''}>${mlbl(m)}</option>`).join('');
-  document.getElementById('monthLabel').textContent=mlbl(selMonth);
 }
-document.getElementById('monthSelect').addEventListener('change',e=>{
-  selMonth=e.target.value;
-  document.getElementById('monthLabel').textContent=mlbl(selMonth);
-  renderTable();
-});
 
 /* ═══ TABLE ═══ */
 function renderTable(){
   const tb=document.getElementById('tableBody');
   const em=document.getElementById('emptyState');
   const rows=appData.filter(d=>d.date.startsWith(selMonth)).sort((a,b)=>a.date.localeCompare(b.date));
-  const tot=rows.reduce((s,r)=>s+Number(r.hours),0);
   const nor=rows.filter(r=>!r.type||r.type.includes('Normal')).reduce((s,r)=>s+Number(r.hours),0);
-  const tat=rows.filter(r=>r.type&&(r.type.includes('Hafta')||r.type.includes('Resmi'))).reduce((s,r)=>s+Number(r.hours),0);
+  const hft=rows.filter(r=>r.type&&r.type.includes('Hafta')).reduce((s,r)=>s+Number(r.hours),0);
+  const rsm=rows.filter(r=>r.type&&r.type.includes('Resmi')).reduce((s,r)=>s+Number(r.hours),0);
+  const tot=rows.reduce((s,r)=>s+Number(r.hours),0);
   document.getElementById('summaryGrid').innerHTML=`
-    <div class="stat-card hl"><div class="stat-lbl">Toplam Mesai</div><div class="stat-val">${fmtH(tot)}</div><div class="stat-unit">${rows.length} gün kayıt</div></div>
     <div class="stat-card"><div class="stat-lbl">Normal Mesai</div><div class="stat-val b">${fmtH(nor)}</div><div class="stat-unit">hafta içi</div></div>
-    <div class="stat-card"><div class="stat-lbl">Tatil Mesaisi</div><div class="stat-val p">${fmtH(tat)}</div><div class="stat-unit">hafta sonu/resmi</div></div>`;
+    <div class="stat-card"><div class="stat-lbl">Hafta Tatili</div><div class="stat-val p">${fmtH(hft)}</div><div class="stat-unit">c.tesi / pazar</div></div>
+    <div class="stat-card"><div class="stat-lbl">Resmi Tatil</div><div class="stat-val" style="color:var(--accent3)">${fmtH(rsm)}</div><div class="stat-unit">bayram / tatil</div></div>
+    <div class="stat-card hl" style="grid-column:1/-1"><div class="stat-lbl">Toplam Mesai</div><div class="stat-val">${fmtH(tot)}</div><div class="stat-unit">${rows.length} gün kayıt</div></div>`;
   if(!rows.length){ tb.innerHTML=''; em.style.display='block'; return; }
   em.style.display='none';
   tb.innerHTML=rows.map(r=>{
@@ -623,9 +685,21 @@ function addEntry(){
   document.getElementById('inpHours').value='';
   document.getElementById('inpNote').value='';
 }
+let pendingDeleteId = null;
 function delEntry(id){
-  appData=appData.filter(d=>d.id!==id);
-  save(); renderAll();
+  pendingDeleteId = id;
+  document.getElementById('deleteOverlay').classList.remove('hidden');
+}
+function closeDeleteModal(){
+  pendingDeleteId = null;
+  document.getElementById('deleteOverlay').classList.add('hidden');
+}
+function confirmDelete(){
+  if(pendingDeleteId){
+    appData = appData.filter(d=>d.id!==pendingDeleteId);
+    save(); renderAll();
+  }
+  closeDeleteModal();
 }
 
 /* ═══ WEEKLY ═══ */
@@ -701,12 +775,102 @@ function exportTXT(){
 }
 function dl(name,href){const a=document.createElement('a');a.href=href;a.download=name;a.click();}
 
+/* ═══ THEME ═══ */
+function toggleTheme(){
+  const isLight = document.body.classList.toggle('light');
+  document.getElementById('themeBtn').textContent = isLight ? '🌞' : '🌙';
+  localStorage.setItem('mesai_theme', isLight ? 'light' : 'dark');
+}
+(function(){
+  if(localStorage.getItem('mesai_theme')==='light'){
+    document.body.classList.add('light');
+    document.getElementById('themeBtn').textContent='🌞';
+  }
+})();
+
 function renderAll(){renderMonthSelect();renderTable();renderWeek();}
 
+/* ═══ DATE PICKER ═══ */
+let dpDay, dpMonth, dpYear;
+let dpDrumDay=null, dpDrumMon=null, dpDrumYr=null;
+
+const DP_MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+
+function daysInMonth(m, y){ return new Date(y, m+1, 0).getDate(); }
+
+function dpUpdate(){
+  const maxDay = daysInMonth(dpMonth, dpYear);
+  if(dpDay > maxDay) dpDay = maxDay;
+  // Rebuild day drum with correct range
+  const days = Array.from({length: maxDay}, (_,i)=>i+1);
+  const currentDayIdx = Math.min(dpDay-1, maxDay-1);
+  dpDrumDay = makeDrum(
+    document.getElementById('dt-day'),
+    document.getElementById('dc-day'),
+    days, currentDayIdx,
+    v => String(v).padStart(2,'0'),
+    v => { dpDay=v; updateDpPreview(); }
+  );
+  updateDpPreview();
+}
+
+function updateDpPreview(){
+  document.getElementById('dpPreview').textContent =
+    `${String(dpDay).padStart(2,'0')} ${DP_MONTHS[dpMonth]} ${dpYear}`;
+}
+
+function openDatePicker(){
+  const now = new Date();
+  dpDay   = now.getDate();
+  dpMonth = now.getMonth();
+  dpYear  = now.getFullYear();
+
+  const years = Array.from({length:11},(_,i)=>2020+i);
+
+  // Day drum built inside dpUpdate
+  dpDrumMon = makeDrum(
+    document.getElementById('dt-mon'),
+    document.getElementById('dc-mon'),
+    DP_MONTHS, dpMonth,
+    v => v,
+    (v) => { dpMonth=DP_MONTHS.indexOf(v); dpUpdate(); }
+  );
+  dpDrumYr = makeDrum(
+    document.getElementById('dt-yr'),
+    document.getElementById('dc-yr'),
+    years, years.indexOf(dpYear),
+    v => String(v),
+    v => { dpYear=v; dpUpdate(); }
+  );
+
+  dpUpdate(); // builds day drum and sets preview
+  document.getElementById('datepickerOverlay').classList.remove('hidden');
+}
+
+function closeDatePicker(){
+  document.getElementById('datepickerOverlay').classList.add('hidden');
+}
+
+function confirmDatePicker(){
+  const dateStr = `${dpYear}-${String(dpMonth+1).padStart(2,'0')}-${String(dpDay).padStart(2,'0')}`;
+  document.getElementById('inpDate').value = dateStr;
+  document.getElementById('dateDrumDisplay').textContent =
+    `${String(dpDay).padStart(2,'0')} ${DP_MONTHS[dpMonth]} ${dpYear}`;
+  closeDatePicker();
+}
+
 /* ═══ INIT ═══ */
-const t=new Date();
-document.getElementById('inpDate').value=t.toISOString().slice(0,10);
-['inpDate','inpHours','inpNote'].forEach(id=>{
+// Set today as default date display
+(function(){
+  const now=new Date();
+  const d=now.getDate(), m=now.getMonth(), y=now.getFullYear();
+  const dateStr=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  document.getElementById('inpDate').value=dateStr;
+  document.getElementById('dateDrumDisplay').textContent=
+    `${String(d).padStart(2,'0')} ${DP_MONTHS[m]} ${y}`;
+})();
+
+['inpHours','inpNote'].forEach(id=>{
   document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')addEntry();});
 });
 
